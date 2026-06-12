@@ -190,15 +190,25 @@ function refreshUI() {
 
 // Navigation & Tabs System
 function setupEventListeners() {
-    // Sidebar Tabs Switch
-    const tabs = document.querySelectorAll('.nav-links li');
+    // Sidebar & Mobile Nav Tabs Switch
+    const tabs = document.querySelectorAll('.nav-links li, .mobile-nav-item');
     tabs.forEach(tab => {
         tab.addEventListener('click', function(e) {
             e.preventDefault();
-            tabs.forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
             
             const targetId = this.getAttribute('data-target');
+            
+            // Remove active classes
+            document.querySelectorAll('.nav-links li').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.mobile-nav-item').forEach(t => t.classList.remove('active'));
+            
+            // Set active class
+            const sidebarTab = document.querySelector(`.nav-links li[data-target="${targetId}"]`);
+            if (sidebarTab) sidebarTab.classList.add('active');
+            
+            const mobileTab = document.querySelector(`.mobile-nav-item[data-target="${targetId}"]`);
+            if (mobileTab) mobileTab.classList.add('active');
+            
             document.querySelectorAll('.app-section').forEach(sec => sec.classList.remove('active'));
             document.getElementById(targetId).classList.add('active');
 
@@ -217,11 +227,14 @@ function setupEventListeners() {
 
             if (targetId === 'dashboard-section' && financeChartInstance) {
                 // Redraw chart to fit dimensions properly
-                financeChartInstance.resize();
+                if (financeChartInstance) {
+                    financeChartInstance.resize();
+                }
             }
 
             // Close mobile sidebar after click
-            document.getElementById('sidebar').classList.remove('active');
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) sidebar.classList.remove('active');
         });
     });
 
