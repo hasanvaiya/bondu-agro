@@ -234,14 +234,31 @@ function setupEventListeners() {
 
             // Close mobile sidebar after click
             const sidebar = document.getElementById('sidebar');
-            if (sidebar) sidebar.classList.remove('active');
+            if (sidebar) sidebar.classList.remove('sidebar-open');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if (backdrop) backdrop.classList.remove('active');
         });
     });
 
     // Mobile menu toggle
-    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
-        document.getElementById('sidebar').classList.toggle('active');
-    });
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            const isOpen = sidebar.classList.toggle('sidebar-open');
+            if (backdrop) backdrop.classList.toggle('active', isOpen);
+        });
+    }
+
+    // Close sidebar when clicking backdrop
+    const backdrop = document.getElementById('sidebarBackdrop');
+    if (backdrop) {
+        backdrop.addEventListener('click', () => {
+            document.getElementById('sidebar').classList.remove('sidebar-open');
+            backdrop.classList.remove('active');
+        });
+    }
 
     // Theme Switcher
     document.getElementById('themeToggleBtn').addEventListener('click', () => {
