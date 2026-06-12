@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bondu Agro - Goat Farm Management</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Chart.js for premium analytics graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons for premium visual interface icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body data-theme="dark">
+
+    <!-- Mobile Nav Header -->
+    <div style="display: none; justify-content: space-between; align-items: center; padding: 12px 20px; background-color: var(--bg-sidebar); border-bottom: 1px solid var(--border); width: 100%; position: fixed; top: 0; left: 0; z-index: 101;" class="mobile-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <img src="logo.jpg" alt="Logo" style="width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--gold);">
+            <h1 style="font-size: 1rem; font-weight: 700; color: var(--gold);">BONDU AGRO</h1>
+        </div>
+        <button id="mobileMenuBtn" class="menu-toggle">
+            <i data-lucide="menu"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar">
+        <div class="logo-container">
+            <img src="logo.jpg" alt="Bondu Agro Logo">
+            <div class="logo-text">
+                <h1>BONDU AGRO</h1>
+                <p>Est. 2026 • খামার ম্যানেজমেন্ট</p>
+            </div>
+        </div>
+
+        <ul class="nav-links">
+            <li class="active" data-target="dashboard-section"><a href="#"><i data-lucide="layout-dashboard"></i> ড্যাশবোর্ড</a></li>
+            <li data-target="goats-section"><a href="#"><i data-lucide="notebook-tabs"></i> ছাগল তালিকা</a></li>
+            <li data-target="finance-section"><a href="#"><i data-lucide="circle-dollar-sign"></i> আয়-ব্যয় হিসাব</a></li>
+            <li data-target="feed-section"><a href="#"><i data-lucide="cookie"></i> খাবার ব্যবস্থাপনা</a></li>
+            <li data-target="notifications-section"><a href="#"><i data-lucide="bell-ring"></i> নোটিফিকেশন ও কাউন্টডাউন</a></li>
+            <li data-target="settings-section"><a href="#"><i data-lucide="settings"></i> সিঙ্ক সেটিংস</a></li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <button id="themeToggleBtn" class="theme-toggle-btn">
+                <i data-lucide="sun" id="themeIcon"></i>
+                <span id="themeText">লাইট মোড</span>
+            </button>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+                <button onclick="exportDataBackup()" class="theme-toggle-btn" style="padding: 6px; font-size: 0.75rem;" title="ডাটা ব্যাকআপ ডাউনলোড করুন">
+                    <i data-lucide="download" style="width: 14px; height: 14px;"></i> ব্যাকআপ
+                </button>
+                <button onclick="document.getElementById('importBackupFile').click()" class="theme-toggle-btn" style="padding: 6px; font-size: 0.75rem;" title="ব্যাকআপ ফাইল আপলোড করুন">
+                    <i data-lucide="upload" style="width: 14px; height: 14px;"></i> রিস্টোর
+                </button>
+                <input type="file" id="importBackupFile" style="display: none;" accept=".json" onchange="importDataBackup(this)">
+            </div>
+            <p style="font-size: 0.7rem; color: var(--text-muted); text-align: center; margin-top: 8px;">© 2026 Bondu Agro • Made for Success</p>
+        </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <main style="padding-top: 32px;" id="mainContent">
+        
+        <!-- Urgent Alert System Banner -->
+        <div class="alert-banner" id="lowStockAlert">
+            <i data-lucide="alert-triangle"></i>
+            <div>
+                <strong style="display: block; font-size: 0.95rem;">স্টক শেষ হওয়ার সতর্কবার্তা! (Low Stock Warning)</strong>
+                <span style="font-size: 0.85rem;" id="lowStockAlertMsg">আপনার কিছু খাবারের স্টক সংকটপূর্ণ অবস্থায় রয়েছে। অনুগ্রহ করে স্টক আপডেট করুন।</span>
+            </div>
+        </div>
+
+        <!-- Section Header -->
+        <header>
+            <div class="header-title">
+                <h2 id="currentSectionTitle">ড্যাশবোর্ড ওভারভিউ</h2>
+                <p id="currentSectionSubtitle">খামারের রিয়েল-টাইম তথ্য এবং রিপোর্ট</p>
+            </div>
+            <div class="quick-stats" style="display: flex; align-items: center; gap: 12px;">
+                <div id="headerSyncIndicator" style="display: flex; align-items: center; gap: 6px; font-size: 0.8rem; padding: 8px 12px; border-radius: 8px; background-color: var(--bg-sidebar); border: 1px solid var(--border); cursor: pointer;" onclick="manualSync()" title="গিটহাব ক্লাউড সিঙ্ক">
+                    <i data-lucide="cloud-off" id="headerSyncIcon" style="width: 14px; height: 14px; color: var(--text-muted);"></i>
+                    <span id="headerSyncText" style="color: var(--text-muted); font-weight: 500;">সিঙ্ক বন্ধ</span>
+                </div>
+                <div class="notification-bell" id="bellIconBtn">
+                    <i data-lucide="bell"></i>
+                    <span class="badge" id="alertBadgeCount">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- ==================== DASHBOARD SECTION ==================== -->
+        <section id="dashboard-section" class="app-section active">
+            <!-- Stat Cards Grid -->
+            <div class="dashboard-grid">
+                <div class="stat-card" onclick="navigateToSection('goats-section')">
+                    <div class="stat-info">
+                        <h3>মোট ছাগল</h3>
+                        <div class="value" id="dashTotalGoats">০</div>
+                        <div class="subtext" id="dashGoatSubtext">সক্রিয়: ০ | বিক্রি: ০</div>
+                    </div>
+                    <div class="stat-icon"><i data-lucide="paw-print"></i></div>
+                </div>
+                <div class="stat-card" onclick="navigateToSection('goats-section', 'male')">
+                    <div class="stat-info">
+                        <h3>পুরুষ / মহিলা ছাগল</h3>
+                        <div class="value" id="dashGenderRatio">০ / ০</div>
+                        <div class="subtext">পাঠা ও প্রজনন উপযোগী ছাগী</div>
+                    </div>
+                    <div class="stat-icon"><i data-lucide="venus-mars"></i></div>
+                </div>
+                <div class="stat-card" onclick="navigateToSection('goats-section', 'kid')">
+                    <div class="stat-info">
+                        <h3>বাচ্চা সংখ্যা</h3>
+                        <div class="value" id="dashTotalKids">০</div>
+                        <div class="subtext">খামারে নতুন জন্ম নেওয়া বাচ্চা</div>
+                    </div>
+                    <div class="stat-icon"><i data-lucide="baby"></i></div>
+                </div>
+                <div class="stat-card danger" onclick="navigateToSection('goats-section', 'sick')">
+                    <div class="stat-info">
+                        <h3>অসুস্থ ছাগল</h3>
+                        <div class="value" id="dashSickGoats">০</div>
+                        <div class="subtext" style="color: var(--danger);">জরুরি চিকিৎসা প্রয়োজন</div>
+                    </div>
+                    <div class="stat-icon"><i data-lucide="heart-pulse"></i></div>
+                </div>
+                <div class="stat-card" onclick="navigateToSection('finance-section')">
+                    <div class="stat-info">
+                        <h3>মোট বিনিয়োগ</h3>
+                        <div class="value" id="dashTotalInvestment">৳০</div>
+                        <div class="subtext">ক্রয়মূল্য + মোট খরচ</div>
+                    </div>
+                    <div class="stat-icon"><i data-lucide="wallet"></i></div>
+                </div>
+                <div class="stat-card" onclick="navigateToSection('finance-section')">
+                    <div class="stat-info">
+                        <h3>সম্পদের বর্তমান মূল্য</h3>
+                        <div class="value" id="dashAssetValue">৳০</div>
+                        <div class="subtext">সক্রিয় ছাগলসমূহের আনুমানিক মূল্য</div>
+                    </div>
+                    <div class="stat-icon"><i data-lucide="trending-up"></i></div>
+                </div>
+                <div class="stat-card" id="profitStatCard" onclick="navigateToSection('finance-section')">
+                    <div class="stat-info">
+                        <h3>লাভ / ক্ষতি (রিপোর্ট)</h3>
+                        <div class="value" id="dashNetProfit">৳০</div>
+                        <div class="subtext" id="dashProfitSubtext">মোট আয় - মোট ব্যয়</div>
+                    </div>
+                    <div class="stat-icon" id="profitStatIcon"><i data-lucide="bar-chart-3"></i></div>
+                </div>
+            </div>
+
+            <!-- Dashboard Analytics Panel -->
+            <div class="charts-section">
+                <!-- Income vs Expense Bar Chart -->
+                <div class="content-box">
+                    <div class="content-box-header">
+                        <h3>আর্থিক গ্রাফ (আয় বনাম ব্যয়)</h3>
+                        <i data-lucide="trending-up" style="color: var(--gold);"></i>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="financeChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Feed Stocks Quick Info -->
+                <div class="content-box">
+                    <div class="content-box-header">
+                        <h3>খাদ্য মজুদ অ্যালার্ট</h3>
+                        <i data-lucide="cookie" style="color: var(--gold);"></i>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 16px;" id="dashboardFeedList">
+                        <!-- Dynamic Feed stocks will populate here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upcoming Alerts / Deadlines Overview -->
+            <div class="content-box">
+                <div class="content-box-header">
+                    <h3>আসন্ন জরুরি সময়সীমা (Upcoming Alerts Countdowns)</h3>
+                    <span class="countdown-timer" id="dashUrgentTimerCount">০টি নোটিফিকেশন</span>
+                </div>
+                <div class="notification-list" id="dashboardNotificationsList">
+                    <!-- Notifications countdown will render here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== GOAT LIST SECTION ==================== -->
+        <section id="goats-section" class="app-section">
+            <div class="controls-bar">
+                <div class="search-filter-group">
+                    <div class="search-input-wrapper">
+                        <i data-lucide="search"></i>
+                        <input type="text" id="searchGoatInput" class="search-input" placeholder="কোড বা জাত দিয়ে খুঁজুন...">
+                    </div>
+                    <select id="filterBreed" class="filter-select">
+                        <option value="">সকল জাত (All Breeds)</option>
+                        <!-- Dynamic options -->
+                    </select>
+                    <select id="filterGender" class="filter-select">
+                        <option value="">সকল লিঙ্গ (All Genders)</option>
+                        <option value="Male">পুরুষ (Male)</option>
+                        <option value="Female">মহিলা (Female)</option>
+                        <option value="Kid">বাচ্চা (Kid)</option>
+                    </select>
+                    <select id="filterStatus" class="filter-select">
+                        <option value="">সকল অবস্থা (All Status)</option>
+                        <option value="Healthy">সুস্থ (Healthy)</option>
+                        <option value="Sick">অসুস্থ (Sick)</option>
+                        <option value="Pregnant">প্রজননকাল/গর্ভবতী (Pregnant)</option>
+                        <option value="Sold">বিক্রিত (Sold)</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="openGoatModal()"><i data-lucide="plus"></i> নতুন ছাগল যুক্ত করুন</button>
+            </div>
+
+            <div class="goats-grid" id="goatsGridContainer">
+                <!-- Goat Cards will be rendered dynamically here -->
+            </div>
+        </section>
+
+        <!-- ==================== FINANCE / TRANSACTION SECTION ==================== -->
+        <section id="finance-section" class="app-section">
+            <div class="controls-bar">
+                <div class="search-filter-group">
+                    <select id="filterTransactionType" class="filter-select">
+                        <option value="">সকল লেনদেন (All Transactions)</option>
+                        <option value="income">আয় (Income)</option>
+                        <option value="expense">ব্যয় (Expense)</option>
+                    </select>
+                    <select id="filterTransactionCategory" class="filter-select">
+                        <option value="">সকল ক্যাটাগরি (All Categories)</option>
+                        <option value="খাবার খরচ">খাবার খরচ (Feed Expense)</option>
+                        <option value="চিকিৎসা খরচ">চিকিৎসা খরচ (Medical Expense)</option>
+                        <option value="শ্রমিক খরচ">শ্রমিক খরচ (Labor Expense)</option>
+                        <option value="ছাগল বিক্রির হিসাব">ছাগল বিক্রির হিসাব (Goat Sale)</option>
+                        <option value="ছাগল কেনার হিসাব">ছাগল কেনার হিসাব (Goat Purchase)</option>
+                        <option value="অন্যান্য খরচ">অন্যান্য খরচ (Other Expense)</option>
+                    </select>
+                </div>
+                <button class="btn-primary" onclick="openTransactionModal()"><i data-lucide="circle-plus"></i> লেনদেন যোগ করুন</button>
+            </div>
+
+            <div class="content-box">
+                <div class="content-box-header">
+                    <h3>আয় ও ব্যয়ের খতিয়ান</h3>
+                    <div style="font-weight: 700; color: var(--gold);" id="financeSummaryText">
+                        মোট আয়: ৳০ | মোট ব্যয়: ৳০
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>তারিখ</th>
+                                <th>বিবরণ/ক্যাটাগরি</th>
+                                <th>প্রকার</th>
+                                <th>পরিমাণ</th>
+                                <th>মন্তব্য</th>
+                                <th>অ্যাকশন</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactionTableBody">
+                            <!-- Transactions list populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== FEED MANAGEMENT SECTION ==================== -->
+        <section id="feed-section" class="app-section">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;" class="feed-grid-layout">
+                <!-- Feed Inventory Management -->
+                <div class="content-box">
+                    <div class="content-box-header">
+                        <h3>খাবারের স্টক তালিকা (Feed Stock Inventory)</h3>
+                        <button class="btn-primary" onclick="openFeedStockModal()"><i data-lucide="package-plus"></i> স্টক যোগ করুন</button>
+                    </div>
+                    <div class="table-wrapper" style="margin-top: 0;">
+                        <table>
+                            <thead>
+                                <th>খাবারের নাম</th>
+                                <th>বর্তমান স্টক (কেজি)</th>
+                                <th>সর্বনিম্ন সীমা (কেজি)</th>
+                                <th>অবস্থা</th>
+                                <th>অ্যাকশন</th>
+                            </thead>
+                            <tbody id="feedStockTableBody">
+                                <!-- Dynamic stock items -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Daily Feed Consumed Management -->
+                <div class="content-box">
+                    <div class="content-box-header">
+                        <h3>দৈনিক খাবার খাওয়ানোর রেকর্ড</h3>
+                        <button class="btn-primary" onclick="openFeedLogModal()"><i data-lucide="utensils"></i> খাবার খাওয়ানোর রেকর্ড</button>
+                    </div>
+                    <div class="table-wrapper" style="margin-top: 0;">
+                        <table>
+                            <thead>
+                                <th>তারিখ ও সময়</th>
+                                <th>খাবারের নাম</th>
+                                <th>খাওয়ানোর পরিমাণ (কেজি)</th>
+                                <th>মন্তব্য</th>
+                            </tr>
+                            <tbody id="feedLogsTableBody">
+                                <!-- Dynamic consumption logs -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== DETAILED NOTIFICATIONS SECTION ==================== -->
+        <section id="notifications-section" class="app-section">
+            <div class="content-box">
+                <div class="content-box-header">
+                    <h3>সকল টিকা, কৃমিনাশক, প্রজনন ও প্রসবের কাউন্টডাউন লিস্ট</h3>
+                    <span class="countdown-timer" id="notifActiveCount">০টি সক্রিয় ইভেন্ট</span>
+                </div>
+                <div class="controls-bar" style="margin-bottom: 16px; padding: 0;">
+                    <div class="search-filter-group">
+                        <select id="filterNotifType" class="filter-select">
+                            <option value="">সকল প্রকার (All Types)</option>
+                            <option value="vaccine">টিকা / ভ্যাকসিন (Vaccination)</option>
+                            <option value="deworming">কৃমিনাশক (Deworming)</option>
+                            <option value="breeding">প্রজনন সময় (Breeding)</option>
+                            <option value="delivery">প্রসবের সম্ভাব্য তারিখ (Delivery)</option>
+                        </select>
+                        <select id="filterNotifUrgency" class="filter-select">
+                            <option value="">সকল অবস্থা (All Status)</option>
+                            <option value="urgent">জরুরি/অতিবাহিত (Urgent / Overdue)</option>
+                            <option value="upcoming">আসন্ন (Upcoming)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="notification-list" id="notificationsDetailedList" style="max-height: 600px;">
+                    <!-- Notification items populated dynamically -->
+                </div>
+        <!-- ==================== SETTINGS SECTION ==================== -->
+        <section id="settings-section" class="app-section">
+            <div class="content-box" style="max-width: 650px; margin: 0 auto;">
+                <div class="content-box-header">
+                    <h3>গিটহাব ক্লাউড সিঙ্ক কনফিগারেশন (GitHub Sync)</h3>
+                    <i data-lucide="cloud" style="color: var(--gold);"></i>
+                </div>
+                <div style="margin-bottom: 20px; font-size: 0.9rem; color: var(--text-muted);">
+                    গিটহাব এপিআই (API) ব্যবহার করে ফায়ারবেস ছাড়াই আপনার ডেটা অনলাইনে গিটহাবে সেভ করে রাখুন। এর ফলে মোবাইল এবং ল্যাপটপসহ যেকোনো ডিভাইস থেকে একই খামারের ডেটা দেখতে ও এডিট করতে পারবেন।
+                </div>
+                
+                <form id="ghSyncForm">
+                    <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; margin-bottom: 20px;">
+                        <input type="checkbox" id="ghEnabled" style="width: 20px; height: 20px; cursor: pointer;">
+                        <label for="ghEnabled" style="cursor: pointer; margin-bottom: 0; font-weight: 700; color: var(--gold);">গিটহাব ক্লাউড সিঙ্ক চালু করুন (Enable GitHub Cloud Sync)</label>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="ghUsername">গিটহাব ইউজারনেম (GitHub Username) *</label>
+                            <input type="text" id="ghUsername" class="form-control" placeholder="যেমন: riseup">
+                        </div>
+                        <div class="form-group">
+                            <label for="ghRepo">রিপোজিটরি নাম (Repository Name) *</label>
+                            <input type="text" id="ghRepo" class="form-control" placeholder="যেমন: bondu-agro">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="ghToken">গিটহাব পার্সোনাল অ্যাক্সেস টোকেন (Personal Access Token - PAT) *</label>
+                            <input type="password" id="ghToken" class="form-control" placeholder="classic token (repo permissions required)">
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">
+                                * এই টোকেনটি শুধুমাত্র আপনার এই ডিভাইসের ব্রাউজারে সুরক্ষিত থাকবে। এটি কখনোই গিটহাবের কোডে আপলোড বা অন্য কারো সাথে শেয়ার হবে না।
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; margin-top: 20px;">
+                        <button type="button" class="btn-primary" onclick="saveSyncSettings()"><i data-lucide="save"></i> সেটিংস সেভ করুন</button>
+                        <button type="button" class="btn-secondary" id="ghTestBtn" onclick="testGitHubSync()"><i data-lucide="refresh-cw"></i> কানেকশন টেস্ট করুন</button>
+                    </div>
+                </form>
+
+                <div id="syncStatusBox" style="display: none; margin-top: 24px; padding: 16px; border-radius: 8px; border: 1px solid var(--border); background-color: rgba(255,255,255,0.02);">
+                    <h4 style="font-size: 0.95rem; color: var(--gold); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i data-lucide="info"></i> সিঙ্ক স্ট্যাটাস (Sync Status)</h4>
+                    <p style="font-size: 0.9rem;" id="syncStatusText">লোকাল ডেটা ব্যবহার করা হচ্ছে।</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== GOAT FORM MODAL (ADD / EDIT) ==================== -->
+    <div class="modal-overlay" id="goatModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="goatModalTitle">নতুন ছাগল যুক্ত করুন</h3>
+                <button class="close-modal-btn" onclick="closeGoatModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="goatForm">
+                    <input type="hidden" id="goatIndex">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="goatCode">ছাগলের কোড / ট্যাগ আইডি *</label>
+                            <input type="text" id="goatCode" class="form-control" required placeholder="যেমন: GT-001">
+                        </div>
+                        <div class="form-group">
+                            <label for="goatBreed">জাত (Breed) *</label>
+                            <input type="text" id="goatBreed" class="form-control" list="breedSuggestions" required placeholder="যেমন: Black Bengal, Jamunapari">
+                            <datalist id="breedSuggestions">
+                                <option value="Black Bengal">
+                                <option value="Jamunapari">
+                                <option value="Beetal">
+                                <option value="Haryana">
+                                <option value="Boer">
+                                <option value="Sirohi">
+                            </datalist>
+                        </div>
+                        <div class="form-group">
+                            <label for="goatGender">লিঙ্গ (Gender) *</label>
+                            <select id="goatGender" class="form-control" required>
+                                <option value="Male">পুরুষ (Male)</option>
+                                <option value="Female">মহিলা (Female)</option>
+                                <option value="Kid">বাচ্চা (Kid)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="goatAge">বয়স / জন্ম তারিখ *</label>
+                            <input type="text" id="goatAge" class="form-control" required placeholder="যেমন: ৮ মাস বা নির্দিষ্ট তারিখ">
+                        </div>
+                        <div class="form-group">
+                            <label for="goatWeight">বর্তমান ওজন (কেজি) *</label>
+                            <input type="number" id="goatWeight" class="form-control" required step="0.1" placeholder="ওজন কেজিতে">
+                        </div>
+                        <div class="form-group">
+                            <label for="goatPurchasePrice">কেনার মূল্য (টাকা)</label>
+                            <input type="number" id="goatPurchasePrice" class="form-control" placeholder="খামারের নিজের বাচ্চা হলে ০ দিন">
+                        </div>
+                        <div class="form-group">
+                            <label for="goatPurchaseDate">কেনার দিন (Purchase Date)</label>
+                            <input type="date" id="goatPurchaseDate" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="goatStatus">বর্তমান অবস্থা *</label>
+                            <select id="goatStatus" class="form-control" required>
+                                <option value="Healthy">সুস্থ (Healthy)</option>
+                                <option value="Sick">অসুস্থ (Sick)</option>
+                                <option value="Pregnant">প্রজননকাল/গর্ভবতী (Pregnant)</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Image Upload section -->
+                        <div class="form-group full-width">
+                            <label>ছাগলের ছবি (Image)</label>
+                            <div class="image-upload-zone" onclick="document.getElementById('goatImageFile').click()">
+                                <i data-lucide="image"></i>
+                                <p>ছবি আপলোড করতে ক্লিক করুন (PNG/JPG)</p>
+                                <input type="file" id="goatImageFile" style="display: none;" accept="image/*">
+                                <img id="goatImagePreview" class="image-preview" src="#" alt="Preview">
+                                <input type="hidden" id="goatImageBase64">
+                            </div>
+                        </div>
+
+                        <!-- Veterinary & Dates -->
+                        <div class="form-group">
+                            <label for="goatVaccineDate">পরবর্তী ভ্যাকসিনের তারিখ (Next Vaccine)</label>
+                            <input type="date" id="goatVaccineDate" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="goatDewormingDate">পরবর্তী কৃমিনাশকের তারিখ (Next Deworming)</label>
+                            <input type="date" id="goatDewormingDate" class="form-control">
+                        </div>
+
+                        <!-- Breeding details (Only activated if Female is selected or general) -->
+                        <div class="form-group full-width" id="femaleBreedingGroup" style="border: 1px solid var(--border); padding: 12px; border-radius: 8px; margin-top: 10px;">
+                            <h4 style="font-size: 0.9rem; color: var(--gold); margin-bottom: 8px; display: flex; align-items: center; gap: 6px;"><i data-lucide="heart"></i> প্রজনন ও প্রসব সংক্রান্ত তথ্য (Breeding Data)</h4>
+                            <div class="form-grid" style="gap: 12px;">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="goatBreedingDate">প্রজননের তারিখ (Breeding Date)</label>
+                                    <input type="date" id="goatBreedingDate" class="form-control">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="goatKidsCount">বাচ্চা প্রসবের সংখ্যা (Kids Count)</label>
+                                    <input type="number" id="goatKidsCount" class="form-control" placeholder="প্রসব হয়ে থাকলে বাচ্চা সংখ্যা">
+                                </div>
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 8px;" id="expectedDeliveryInfo">
+                                * প্রজননের তারিখ দিলে প্রসবের সম্ভাব্য তারিখ (১৫০ দিন পর) এবং কাউন্টডাউন স্বয়ংক্রিয়ভাবে হিসাব করা হবে।
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeGoatModal()">বাতিল করুন</button>
+                <button class="btn-primary" onclick="saveGoat()">সংরক্ষণ করুন</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TRANSACTION MODAL ==================== -->
+    <div class="modal-overlay" id="transactionModal">
+        <div class="modal-box" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 id="transactionModalTitle">নতুন লেনদেন যোগ করুন</h3>
+                <button class="close-modal-btn" onclick="closeTransactionModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="transactionForm">
+                    <div class="form-group">
+                        <label for="txType">লেনদেনের ধরণ *</label>
+                        <select id="txType" class="form-control" required>
+                            <option value="expense">ব্যয় (Expense)</option>
+                            <option value="income">আয় (Income)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="txCategory">ক্যাটাগরি *</label>
+                        <select id="txCategory" class="form-control" required>
+                            <option value="খাবার খরচ">খাবার খরচ (Feed Cost)</option>
+                            <option value="চিকিৎসা খরচ">চিকিৎসা খরচ (Medical Cost)</option>
+                            <option value="শ্রমিক খরচ">শ্রমিক খরচ (Labor/Staff Cost)</option>
+                            <option value="অন্যান্য খরচ">অন্যান্য খরচ (Other Cost)</option>
+                            <option value="ছাগল বিক্রির হিসাব">ছাগল বিক্রির হিসাব (Goat Sale)</option>
+                            <option value="ছাগল কেনার হিসাব">ছাগল কেনার হিসাব (Goat Purchase)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="txAmount">পরিমাণ (টাকা) *</label>
+                        <input type="number" id="txAmount" class="form-control" required placeholder="টাকার পরিমাণ">
+                    </div>
+                    <div class="form-group">
+                        <label for="txDate">তারিখ *</label>
+                        <input type="date" id="txDate" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="txNote">মন্তব্য (Note)</label>
+                        <input type="text" id="txNote" class="form-control" placeholder="যেমন: ২৫ কেজি বুটের ভুষি ক্রয়">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeTransactionModal()">বাতিল করুন</button>
+                <button class="btn-primary" onclick="saveTransaction()">সংরক্ষণ করুন</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== FEED STOCK MODAL ==================== -->
+    <div class="modal-overlay" id="feedStockModal">
+        <div class="modal-box" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>খাবারের স্টক আপডেট করুন</h3>
+                <button class="close-modal-btn" onclick="closeFeedStockModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="feedStockForm">
+                    <div class="form-group">
+                        <label for="feedName">খাবারের নাম *</label>
+                        <input type="text" id="feedName" class="form-control" required placeholder="যেমন: গমের ভুষি, খড়, সাইলেজ">
+                    </div>
+                    <div class="form-group">
+                        <label for="feedQuantity">পরিমাণ (কেজি) *</label>
+                        <input type="number" id="feedQuantity" class="form-control" required step="0.1" placeholder="স্টক পরিমাণ (কেজিতে)">
+                    </div>
+                    <div class="form-group">
+                        <label for="feedMinThreshold">সর্বনিম্ন সতর্ক সীমা (কেজি) *</label>
+                        <input type="number" id="feedMinThreshold" class="form-control" required step="0.1" value="10.0" placeholder="যেমন: ১০ কেজি">
+                    </div>
+                    <div class="form-group">
+                        <label for="feedPricePerKg">কেজি প্রতি মূল্য (ঐচ্ছিক)</label>
+                        <input type="number" id="feedPricePerKg" class="form-control" placeholder="টাকা প্রতি কেজি">
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">
+                        * স্টক যোগ করার ফলে এটি স্বয়ংক্রিয়ভাবে 'খাবার খরচ' হিসেবে খরচের খাতায় যোগ করার অপশন থাকবে।
+                    </div>
+                    <div class="form-group" style="flex-direction: row; align-items: center; gap: 8px; margin-top: 12px;">
+                        <input type="checkbox" id="feedAddToExpenses" checked style="width: 18px; height: 18px; cursor: pointer;">
+                        <label for="feedAddToExpenses" style="cursor: pointer; margin-bottom: 0;">স্টক মূল্য খরচের খাতায় যোগ করুন (Add to Expenses)</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeFeedStockModal()">বাতিল করুন</button>
+                <button class="btn-primary" onclick="saveFeedStock()">সংরক্ষণ করুন</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== DAILY FEED RECORD (CONSUMPTION) MODAL ==================== -->
+    <div class="modal-overlay" id="feedLogModal">
+        <div class="modal-box" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>দৈনিক খাবার খাওয়ানোর রেকর্ড</h3>
+                <button class="close-modal-btn" onclick="closeFeedLogModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="feedLogForm">
+                    <div class="form-group">
+                        <label for="logFeedSelect">খাবারের ধরণ *</label>
+                        <select id="logFeedSelect" class="form-control" required>
+                            <!-- Dynamic options based on stock -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="logFeedQty">খাওয়ানোর পরিমাণ (কেজি) *</label>
+                        <input type="number" id="logFeedQty" class="form-control" required step="0.1" placeholder="কেজিতে হিসাব">
+                    </div>
+                    <div class="form-group">
+                        <label for="logDate">তারিখ ও সময় *</label>
+                        <input type="datetime-local" id="logDate" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="logNote">মন্তব্য</label>
+                        <input type="text" id="logNote" class="form-control" placeholder="যেমন: সকালের খাবার">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeFeedLogModal()">বাতিল করুন</button>
+                <button class="btn-primary" onclick="saveFeedLog()">রেকর্ড করুন</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== SELL GOAT MODAL ==================== -->
+    <div class="modal-overlay" id="sellGoatModal">
+        <div class="modal-box" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>ছাগল বিক্রির হিসাব নথিবদ্ধ করুন</h3>
+                <button class="close-modal-btn" onclick="closeSellModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="sellGoatForm">
+                    <input type="hidden" id="sellGoatIndex">
+                    <div class="form-group">
+                        <label>বিক্রিত ছাগলের কোড</label>
+                        <input type="text" id="sellGoatCodeDisplay" class="form-control" readonly style="background-color: rgba(255,255,255,0.05);">
+                    </div>
+                    <div class="form-group">
+                        <label for="sellPrice">বিক্রয় মূল্য (টাকা) *</label>
+                        <input type="number" id="sellPrice" class="form-control" required placeholder="বিক্রি মূল্য লিখুন">
+                    </div>
+                    <div class="form-group">
+                        <label for="sellDate">বিক্রির তারিখ *</label>
+                        <input type="date" id="sellDate" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sellNote">মন্তব্য</label>
+                        <input type="text" id="sellNote" class="form-control" placeholder="যেমন: কালাম মিঞার কাছে বিক্রি">
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">
+                        * এই ছাগলটি সক্রিয় তালিকা থেকে বিক্রিত অবস্থায় পরিবর্তিত হবে এবং এর বিক্রয়মূল্য 'আয়' হিসেবে আর্থিক তালিকায় যুক্ত হবে।
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeSellModal()">বাতিল করুন</button>
+                <button class="btn-primary" onclick="saveGoatSale()">বিক্রি সম্পন্ন করুন</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Check for Lucide Icons loading
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+    </script>
+</body>
+</html>
